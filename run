@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+: <<DOCXX
+Add description
+Author: morgan@morganism.dev
+Date: Sat 27 Dec 2025 18:57:36 GMT
+DOCXX
+
+npm run dev

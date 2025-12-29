@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+: <<DOCXX
+Add description
+Author: morgan@morganism.dev
+Date: Sat 27 Dec 2025 18:55:25 GMT
+DOCXX
+
+npm install
+
+
