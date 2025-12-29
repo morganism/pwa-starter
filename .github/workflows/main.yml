@@ -34,7 +34,7 @@ jobs:
         run: cp dist/index.html dist/404.html
 
       - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
 
