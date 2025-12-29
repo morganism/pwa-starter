@@ -1,6 +1,7 @@
-#Build Status
+Build Status
 
 [![Deploy PWA Starter to GitHub Pages](https://github.com/morganism/pwa-starter/actions/workflows/main.yml/badge.svg)](https://github.com/morganism/pwa-starter/actions/workflows/main.yml)
+[![Dependabot Updates](https://github.com/morganism/pwa-starter/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/morganism/pwa-starter/actions/workflows/dependabot/dependabot-updates)
 
 [Documentation](https://docs.pwabuilder.com/#/starter/quick-start)
 
