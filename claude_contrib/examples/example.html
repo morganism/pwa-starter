@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WonkyDonkey PWA - Example</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007AFF">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- SQL.js -->
+    <script src="https://sql.js.org/dist/sql-wasm.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --background: #fff;
+            --text: #000;
+            --border: #ddd;
+        }
+
+        [data-theme="dark"] {
+            --background: #1a1a1a;
+            --text: #fff;
+            --border: #444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--background);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .metric-card {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .metric {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-left: 3px solid;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .log-entry.debug { border-color: #6c757d; }
+        .log-entry.info { border-color: #17a2b8; }
+        .log-entry.warn { border-color: #ffc107; }
+        .log-entry.error { border-color: #dc3545; }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        #status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        #status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div id="auth-section" class="auth-container">
+        <div class="card">
+            <h2>Login</h2>
+            <div id="status" class="hidden"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-section" class="hidden">
+        <header>
+            <div class="container">
+                <h1>WonkyDonkey PWA</h1>
+                <p>Welcome, <span id="user-name"></span> | <button onclick="handleLogout()" class="btn-secondary">Logout</button></p>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="tabs">
+                <button class="tab active" data-tab="home">Home</button>
+                <button class="tab" data-tab="settings">Settings</button>
+                <button class="tab" data-tab="logs">Logs</button>
+                <button class="tab" data-tab="metrics">Metrics</button>
+                <button class="tab" data-tab="api">API</button>
+            </div>
+
+            <!-- Home Tab -->
+            <div class="tab-content active" data-content="home">
+                <div class="card">
+                    <h2>Welcome to WonkyDonkey PWA</h2>
+                    <p>This is a demonstration of the PWA Components system.</p>
+                    <div class="metric-card">
+                        <div class="metric">
+                            <div class="metric-value" id="total-users">0</div>
+                            <div class="metric-label">Total Users</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="total-logs">0</div>
+                            <div class="metric-label">Total Logs</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="total-pages">0</div>
+                            <div class="metric-label">Pages</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" data-content="settings">
+                <div class="card">
+                    <h2>Application Settings</h2>
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <select id="theme-select">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Primary Color</label>
+                        <input type="color" id="color-picker">
+                    </div>
+                    <div class="form-group">
+                        <label>Enable Animations</label>
+                        <input type="checkbox" id="animations-toggle" checked>
+                    </div>
+                    <button onclick="saveSettings()">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-content" data-content="logs">
+                <div class="card">
+                    <h2>Application Logs</h2>
+                    <div style="margin-bottom: 10px;">
+                        <select id="log-level-filter">
+                            <option value="">All Levels</option>
+                            <option value="debug">Debug</option>
+                            <option value="info">Info</option>
+                            <option value="warn">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                        <button onclick="refreshLogs()" class="btn-secondary">Refresh</button>
+                        <button onclick="clearLogs()" class="btn-danger">Clear</button>
+                    </div>
+                    <div id="logs-container"></div>
+                </div>
+            </div>
+
+            <!-- Metrics Tab -->
+            <div class="tab-content" data-content="metrics">
+                <div class="card">
+                    <h2>Metrics Dashboard</h2>
+                    <div class="metric-card">
+                        <div class="metric">
+                            <div class="metric-value" id="page-views">0</div>
+                            <div class="metric-label">Page Views</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="api-calls">0</div>
+                            <div class="metric-label">API Calls</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="errors">0</div>
+                            <div class="metric-label">Errors</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Tab -->
+            <div class="tab-content" data-content="api">
+                <div class="card">
+                    <h2>API Test</h2>
+                    <div class="form-group">
+                        <label>Method</label>
+                        <select id="api-method">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Endpoint</label>
+                        <input type="text" id="api-endpoint" value="/api/test">
+                    </div>
+                    <div class="form-group">
+                        <label>Body (JSON)</label>
+                        <textarea id="api-body" rows="5">{}</textarea>
+                    </div>
+                    <button onclick="testAPI()">Send Request</button>
+                    <div id="api-response" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import pwa from './pwa-components/index.js';
+
+        // Make pwa globally available
+        window.pwa = pwa;
+
+        // Initialize PWA Components
+        pwa.quickSetup({
+            schemaUrl: './pwa-components/db/schema.sql',
+            logLevel: 'debug',
+            enableMetrics: true
+        }).then(() => {
+            console.log('PWA Components ready');
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Check if user is already logged in
+            if (pwa.auth.isAuthenticated()) {
+                showApp();
+            }
+        }).catch(error => {
+            console.error('Failed to initialize PWA:', error);
+            showStatus('Failed to initialize application', 'error');
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+            // Theme and settings
+            document.getElementById('theme-select').addEventListener('change', (e) => {
+                pwa.settings.setTheme(e.target.value);
+            });
+
+            document.getElementById('color-picker').addEventListener('change', (e) => {
+                pwa.settings.setPrimaryColor(e.target.value);
+            });
+
+            // Log filter
+            document.getElementById('log-level-filter').addEventListener('change', refreshLogs);
+        }
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                await pwa.auth.login(username, password);
+                showApp();
+                showStatus('Login successful!', 'success');
+            } catch (error) {
+                showStatus('Login failed: ' + error.message, 'error');
+            }
+        }
+
+        // Handle logout
+        window.handleLogout = async function() {
+            await pwa.auth.logout();
+            hideApp();
+        };
+
+        // Show app section
+        function showApp() {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            
+            const user = pwa.auth.getCurrentUser();
+            document.getElementById('user-name').textContent = user.display_name || user.username;
+            
+            // Load dashboard data
+            refreshDashboard();
+        }
+
+        // Hide app section
+        function hideApp() {
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-section').classList.add('hidden');
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.querySelector(`[data-content="${tabName}"]`).classList.add('active');
+
+            // Load tab-specific data
+            if (tabName === 'logs') {
+                refreshLogs();
+            } else if (tabName === 'metrics') {
+                refreshMetrics();
+            }
+        }
+
+        // Refresh dashboard
+        function refreshDashboard() {
+            const users = pwa.db.getAll('SELECT COUNT(*) as count FROM users');
+            const logs = pwa.db.getAll('SELECT COUNT(*) as count FROM logs');
+            const pages = pwa.db.getAll('SELECT COUNT(*) as count FROM content_pages WHERE published = 1');
+
+            document.getElementById('total-users').textContent = users[0]?.count || 0;
+            document.getElementById('total-logs').textContent = logs[0]?.count || 0;
+            document.getElementById('total-pages').textContent = pages[0]?.count || 0;
+        }
+
+        // Save settings
+        window.saveSettings = function() {
+            const theme = document.getElementById('theme-select').value;
+            const color = document.getElementById('color-picker').value;
+            const animations = document.getElementById('animations-toggle').checked;
+
+            pwa.settings.setTheme(theme);
+            pwa.settings.setPrimaryColor(color);
+            pwa.settings.setAnimations(animations);
+
+            showStatus('Settings saved!', 'success');
+        };
+
+        // Refresh logs
+        window.refreshLogs = function() {
+            const level = document.getElementById('log-level-filter').value;
+            const logs = pwa.logging.getLogsFromDb(50, level || null);
+            
+            const container = document.getElementById('logs-container');
+            container.innerHTML = logs.map(log => `
+                <div class="log-entry ${log.level}">
+                    <strong>${new Date(log.create_date).toLocaleString()}</strong> - 
+                    <span class="level">${log.level.toUpperCase()}</span>: 
+                    ${log.message}
+                </div>
+            `).join('');
+        };
+
+        // Clear logs
+        window.clearLogs = function() {
+            if (confirm('Are you sure you want to clear all logs?')) {
+                pwa.logging.clearDbLogs(0);
+                refreshLogs();
+            }
+        };
+
+        // Refresh metrics
+        function refreshMetrics() {
+            const pageViews = pwa.db.getAll(
+                "SELECT COUNT(*) as count FROM metrics WHERE metric_name = 'page.view'"
+            );
+            const apiCalls = pwa.db.getAll(
+                "SELECT COUNT(*) as count FROM metrics WHERE metric_name LIKE 'api.%'"
+            );
+            const errors = pwa.db.getAll(
+                "SELECT COUNT(*) as count FROM logs WHERE level = 'error'"
+            );
+
+            document.getElementById('page-views').textContent = pageViews[0]?.count || 0;
+            document.getElementById('api-calls').textContent = apiCalls[0]?.count || 0;
+            document.getElementById('errors').textContent = errors[0]?.count || 0;
+        }
+
+        // Test API
+        window.testAPI = async function() {
+            const method = document.getElementById('api-method').value;
+            const endpoint = document.getElementById('api-endpoint').value;
+            const body = document.getElementById('api-body').value;
+
+            try {
+                const response = await pwa.api.handle(method, endpoint, {
+                    body: JSON.parse(body)
+                });
+
+                document.getElementById('api-response').innerHTML = `
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('api-response').innerHTML = `
+                    <pre style="color: red;">${error.message}</pre>
+                `;
+            }
+        };
+
+        // Show status message
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+            status.classList.remove('hidden');
+
+            setTimeout(() => {
+                status.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
