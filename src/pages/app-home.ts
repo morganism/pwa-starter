@@ -6,12 +6,16 @@ import '@shoelace-style/shoelace/dist/components/button/button.js';
 
 import { styles } from '../styles/shared-styles';
 
+// Import PWA Components system
+import pwa from '../claude_contrib/index.js';
+
 @customElement('app-home')
 export class AppHome extends LitElement {
 
   // For more information on using properties and state in lit
   // check out this link https://lit.dev/docs/components/properties/
   @property() message = 'Welcome!';
+  @property() pwaReady = false;
 
   static get styles() {
     return [
@@ -64,6 +68,27 @@ export class AppHome extends LitElement {
     // this method is a lifecycle even in lit
     // for more info check out the lit docs https://lit.dev/docs/components/lifecycle/
     console.log('This is your home page');
+
+    // Initialize PWA Components
+    try {
+      await pwa.quickSetup({
+        schemaUrl: '/db/schema.sql',
+        logLevel: 'info',
+        enableMetrics: true
+      });
+
+      this.pwaReady = true;
+      console.log('PWA Components initialized successfully');
+
+      // Log a test message
+      pwa.logging.info('App home page loaded', { category: 'app' });
+
+      // Track page view
+      pwa.metrics.counter('page.view', 1, { tags: { page: 'home' } });
+
+    } catch (error) {
+      console.error('Failed to initialize PWA:', error);
+    }
   }
 
   share() {
@@ -127,6 +152,12 @@ export class AppHome extends LitElement {
                 <a href="https://github.com/thepassle/app-tools/blob/master/router/README.md"
                   >App Tools Router</a>
               </li>
+
+              ${this.pwaReady ? html`
+                <li>
+                  <strong>Claude PWA Components</strong> - Database, Logging, Metrics, APIs
+                </li>
+              ` : null}
             </ul>
           </sl-card>
 
